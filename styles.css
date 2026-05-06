@@ -277,14 +277,14 @@ input[type="text"]:focus {
     box-shadow: var(--neon-glow), 0 0 40px var(--primary-color);
 }
 
-.yak-animation {
+.kuboki-animation {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
 }
 
-.yak-avatar {
+.kuboki-avatar {
     font-size: 6rem;
     animation: bounce 1s infinite alternate ease-in-out;
     margin-bottom: 2rem;
