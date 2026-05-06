@@ -1,0 +1,380 @@
+:root {
+    --bg-color: #000000;
+    /* Fondo oscuro absoluto */
+    --text-color: #ffffff;
+    --primary-color: #9333ea;
+    /* Púrpura neón */
+    --secondary-color: #a855f7;
+    /* Púrpura claro */
+    --accent-color: #ffffff;
+    /* Blanco puro para acentos */
+    --neon-glow: 0 0 5px #9333ea, 0 0 10px #9333ea, 0 0 20px #9333ea;
+    --neon-glow-accent: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 40px #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-color);
+    background-image: url('fondo-celular.jpg');
+    background-size: cover;
+    background-position: center;
+    /* Touch & Mobile Optimizations */
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Contenedor de la Galería */
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+    /* Para que el niño pueda hacer scroll */
+    margin-bottom: 20px;
+}
+
+/* El círculo del animal */
+.char-item {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--primary-color);
+    /* Borde cian */
+    border-radius: 50%;
+    /* Esto lo hace círculo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+}
+
+@keyframes tree-breathe {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+/* Cuando Leo toca un animal */
+.char-item:hover,
+.char-item.selected {
+    transform: scale(1.1);
+    background: rgba(147, 51, 234, 0.2);
+    border-color: var(--accent-color);
+    box-shadow: var(--neon-glow-accent);
+}
+
+/* Estilo para el botón de confirmación */
+#btn-select-char {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.5rem;
+    border-radius: 50px;
+    background: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    align-items: center;
+    text-align: center;
+    animation: fadeIn 0.8s ease-out;
+    /* Animación ligeramente más suave */
+    z-index: 10;
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    /* Glassmorphism base */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    margin: 20px auto;
+}
+
+.screen.active {
+    display: flex;
+}
+
+#video-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 5;
+}
+
+#intro-screen {
+    max-width: 100%;
+    height: 100vh;
+    z-index: 50;
+    position: relative;
+    background-color: #000;
+}
+
+#btn-logo:hover {
+    transform: scale(1.05);
+    /* Pequeno feedback visual al pasar el cursor */
+}
+
+h1 {
+    font-size: 2.2rem;
+    margin-bottom: 2rem;
+    color: var(--text-color);
+    text-shadow: var(--neon-glow);
+}
+
+.form-group {
+    width: 100%;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+label {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-shadow: 0 0 5px rgba(6, 182, 212, 0.5);
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 50px;
+    border: 2px solid var(--primary-color);
+    background: rgba(255, 255, 255, 0.05);
+    /* Glassmorphism */
+    backdrop-filter: blur(8px);
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+    outline: none;
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+input[type="text"]:focus {
+    box-shadow: var(--neon-glow);
+}
+
+.age-selector {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.age-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    border: 2px solid var(--primary-color);
+    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.2);
+}
+
+.age-btn.selected {
+    background: var(--accent-color);
+    box-shadow: var(--neon-glow-accent);
+    transform: scale(1.15);
+}
+
+/* --- BLOQUE DE BANDERAS CIRCULARES (NUEVO) --- */
+.flag-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.flag-item {
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    /* Círculo como los personajes */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.2);
+}
+
+.flag-item:hover,
+.flag-item.selected {
+    transform: scale(1.1);
+    border-color: #00FFFF;
+    box-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+    background: rgba(0, 255, 255, 0.1);
+}
+
+.flag-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* --- CONTINUACIÓN DE TU CÓDIGO --- */
+.btn-primary {
+    padding: 1rem 2.5rem;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--bg-color);
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: var(--neon-glow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-top: 1rem;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: var(--neon-glow), 0 0 40px var(--primary-color);
+}
+
+.yak-animation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.yak-avatar {
+    font-size: 6rem;
+    animation: bounce 1s infinite alternate ease-in-out;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.8));
+}
+
+@keyframes bounce {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.map-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: url('../isla-mapa.jpg') no-repeat center center/cover;
+    background-attachment: fixed;
+}
+
+.map-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.player-token {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    font-size: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+}
+
+.bubble {
+    position: absolute;
+    bottom: 100%;
+    background: white;
+    padding: 10px;
+    border-radius: 15px;
+    font-size: 14px;
+    font-weight: bold;
+    color: black;
+    display: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    min-width: 100px;
+}
+
+/* --- FASE 5: INCUBADORA DE MASCOTAS --- */
+.pet-egg-item {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pet-egg-item:hover {
+    transform: scale(1.1) translateY(-10px);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+}

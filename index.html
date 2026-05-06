@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- --- PWA Headers --- -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#9333ea">
+    <link rel="apple-touch-icon" href="logo_kuboki.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- ------------------- -->
+    <title>Mundo Kuboki</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Efecto de destello para el micrófono */
+        .mic-activator {
+            font-size: 50px;
+            background: white;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto;
+            cursor: pointer;
+            box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.7);
+            animation: pulse-orange 2s infinite;
+            border: 4px solid #ff9900;
+        }
+
+        @keyframes pulse-orange {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 165, 0, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 20px rgba(255, 165, 0, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 165, 0, 0);
+            }
+        }
+
+        @keyframes pulse-logo {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+        }
+
+        .mic-activator.ready {
+            animation: none;
+            background: #4CAF50;
+            border-color: #2E7D32;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- MODAL AMIGABLE INSTRUCCIONES PWA -->
+    <div id="loading-overlay"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center; flex-direction:column; color:white;">
+        <div class="spinner"
+            style="width:50px; height:50px; border:5px solid rgba(255,255,255,0.3); border-top:5px solid cyan; border-radius:50%; animation:spin 1s linear infinite;">
+        </div>
+        <h2 style="margin-top:20px; text-shadow:0 0 10px cyan;">Iniciando tu Mundo Mágico...</h2>
+    </div>
+
+    <!-- MODAL COPPA & PRIVACY -->
+    <div id="modal-coppa" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <div style="background: white; border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div style="background: #1e272e; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.2rem;">🛡️ Privacidad Infantil</h3>
+                <button id="btn-close-coppa" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 0;">✖</button>
+            </div>
+            <div id="coppa-content" style="padding: 20px; overflow-y: auto; color: #333; line-height: 1.6; font-size: 0.95rem; text-align: left;">
+                <div style="text-align: center; padding: 40px 0;">
+                    <div class="spinner" style="width:40px; height:40px; border:4px solid #eee; border-top:4px solid #1e90ff; border-radius:50%; animation:spin 1s linear infinite; margin: 0 auto;"></div>
+                    <p style="margin-top: 15px; color: #666; font-weight: bold;" id="coppa-loading-text">Traduciendo documento legal de forma segura...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pwa-helper-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background: #1a1a2e; padding: 20px; border-radius: 20px; border: 2px solid cyan; text-align: center; max-width: 400px; box-shadow: 0 0 30px rgba(0,255,255,0.3);">
+            <h2 style="color: white; margin-bottom: 10px;">¡Lleva a Kuboki contigo!</h2>
+            <p id="pwa-instructions" style="color: #ccc; margin-bottom: 25px; font-size: 1.1rem; line-height: 1.5;"></p>
+            <button onclick="document.getElementById('pwa-helper-modal').style.display='none'" style="background: var(--primary-color); color: white; padding: 12px 30px; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: var(--neon-glow);">¡Entendido!</button>
+        </div>
+    </div>
+
+    <!-- AUDIO DE FONDO PRINCIPAL -->
+    <audio id="bg-music" src="isla-intro.mp3" loop></audio>
+
+    <!-- PANTALLA DE INTRODUCCIÓN (LOGO Y VIDEO) -->
+    <div id="intro-screen" class="screen active" style="padding: 0; justify-content: center; background-color: #000;">
+        <button id="btn-logo"
+            style="background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: opacity 0.5s ease;">
+            <img src="logo_kuboki.png" alt="Mundo Kuboki"
+                style="max-width: 80%; width: 300px; animation: pulse-logo 2s infinite; border-radius: 20px;">
+        </button>
+
+        <div id="video-container" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: black; justify-content: center; align-items: center; overflow: hidden; z-index: 50;">
+            <p id="video-loader" style="position: absolute; color: white; font-size: 1.5rem; animation: pulse-logo 1.5s infinite; z-index: 53;">Cargando Mundo Mágico...</p>
+            <video id="intro-video" src="intro.mp4" preload="auto" playsinline
+                style="height: 100%; width: 100%; object-fit: cover; z-index: 52; position: relative; pointer-events: none;"></video>
+            <button id="btn-skip-video" class="btn-primary"
+                style="position: absolute; bottom: 30px; right: 30px; font-size: 2rem; padding: 0; z-index: 60; background-color: rgba(6, 182, 212, 0.8); border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; border: 2px solid cyan; box-shadow: 0 0 15px cyan; cursor: pointer;">⏭</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE REGISTRO -->
+    <div id="registration-screen" class="screen" style="overflow-y: auto; overflow-x: hidden; height: 100vh; padding-top: 30px; padding-bottom: 50px;">
+
+        <h1 id="lbl-greeting">¡Hola! Soy tu amigo Yak</h1>
+
+        <div class="form-group">
+            <label for="nombre" id="lbl-nombre">Tu Nombre:</label>
+            <input type="text" id="nombre" placeholder="Escribe tu nombre aquí">
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-genero">¿Eres Niño o Niña?</label>
+            <div class="gender-selector" style="display:flex; justify-content:center; gap:20px; margin-top:10px;">
+                <button type="button" class="gender-btn" data-gender="boy"
+                    style="font-size:1.2rem; background:rgba(255,255,255,0.1); border:2px solid #333; border-radius:15px; padding:5px 15px; cursor:pointer; transition:all 0.3s ease;">👦
+                    Niño</button>
+                <button type="button" class="gender-btn" data-gender="girl"
+                    style="font-size:1.2rem; background:rgba(255,255,255,0.1); border:2px solid #333; border-radius:15px; padding:5px 15px; cursor:pointer; transition:all 0.3s ease;">👧
+                    Niña</button>
+            </div>
+            
+            <!-- BOTÓN INSTALAR PWA DEBAJO DEL GÉNERO -->
+            <div id="install-container" style="text-align: center; margin-top: 15px; padding-bottom: 20px;">
+                <button id="btn-install" style="background: rgba(0,0,0,0.5); border: 2px solid cyan; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; font-weight: bold; font-size: 0.9rem; border-radius: 12px; padding: 10px; margin: 0 auto; transition: transform 0.2s; box-shadow: 0 5px 15px rgba(0,255,255,0.2);">
+                    <img src="logo_kuboki.png" style="width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 10px #9333ea;">
+                    <span id="lbl-install">📲 Descargar Ícono para Entrar Directo</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-edad">¿Cuántos años tienes?</label>
+            <div class="age-selector">
+                <button type="button" class="age-btn" data-age="1">1</button>
+                <button type="button" class="age-btn" data-age="2">2</button>
+                <button type="button" class="age-btn" data-age="3">3</button>
+                <button type="button" class="age-btn" data-age="4">4</button>
+                <button type="button" class="age-btn" data-age="5">5</button>
+                <button type="button" class="age-btn" data-age="6">6</button>
+                <button type="button" class="age-btn" data-age="7">7</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label id="lbl-bandera">Elige tu bandera:</label>
+            <div class="flag-grid" id="flag-container">
+                <div class="flag-item" data-lang="en-US"><img src="assets/flags/us.png" class="flag-img" alt="US"></div>
+                <div class="flag-item" data-lang="es-ES"><img src="assets/flags/es.png" class="flag-img" alt="ES"></div>
+                <div class="flag-item" data-lang="es-AR"><img src="assets/flags/ar.png" class="flag-img" alt="AR"></div>
+                <div class="flag-item" data-lang="es-MX"><img src="assets/flags/mx.png" class="flag-img" alt="MX"></div>
+                <div class="flag-item" data-lang="pt-BR"><img src="assets/flags/br.png" class="flag-img" alt="BR"></div>
+                <div class="flag-item" data-lang="fr-FR"><img src="assets/flags/fr.png" class="flag-img" alt="FR"></div>
+                <div class="flag-item" data-lang="it-IT"><img src="assets/flags/it.png" class="flag-img" alt="IT"></div>
+                <div class="flag-item" data-lang="de-DE"><img src="assets/flags/de.png" class="flag-img" alt="DE"></div>
+                <div class="flag-item" data-lang="hu-HU"><img src="assets/flags/hu.png" class="flag-img" alt="HU"></div>
+                <div class="flag-item" data-lang="pl-PL"><img src="assets/flags/pl.png" class="flag-img" alt="PL"></div>
+                <div class="flag-item" data-lang="no-NO"><img src="assets/flags/no.png" class="flag-img" alt="NO"></div>
+                <div class="flag-item" data-lang="sv-SE"><img src="assets/flags/se.png" class="flag-img" alt="SE"></div>
+                <div class="flag-item" data-lang="ro-RO"><img src="assets/flags/ro.png" class="flag-img" alt="RO"></div>
+                <div class="flag-item" data-lang="nl-NL"><img src="assets/flags/nl.png" class="flag-img" alt="NL"></div>
+                <div class="flag-item" data-lang="da-DK"><img src="assets/flags/dk.png" class="flag-img" alt="DK"></div>
+                <div class="flag-item" data-lang="tr-TR"><img src="assets/flags/tr.png" class="flag-img" alt="TR"></div>
+                <div class="flag-item" data-lang="ar-SA"><img src="assets/flags/sa.png" class="flag-img" alt="SA"></div>
+                <div class="flag-item" data-lang="he-IL"><img src="assets/flags/il.png" class="flag-img" alt="IL"></div>
+                <div class="flag-item" data-lang="ja-JP"><img src="assets/flags/jp.png" class="flag-img" alt="JP"></div>
+                <div class="flag-item" data-lang="ko-KR"><img src="assets/flags/kr.png" class="flag-img" alt="KR"></div>
+                <div class="flag-item" data-lang="hi-IN"><img src="assets/flags/in.png" class="flag-img" alt="IN"></div>
+                <div class="flag-item" data-lang="vi-VN"><img src="assets/flags/vn.png" class="flag-img" alt="VN"></div>
+                <div class="flag-item" data-lang="zh-TW"><img src="assets/flags/tw.png" class="flag-img" alt="TW"></div>
+                <div class="flag-item" data-lang="th-TH"><img src="assets/flags/th.png" class="flag-img" alt="TH"></div>
+                <div class="flag-item" data-lang="tl-PH"><img src="assets/flags/ph.png" class="flag-img" alt="PH"></div>
+            </div>
+            <!-- BOTÓN AVISO LEGAL (COPPA) -->
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="btn-legal-coppa" style="background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); color: white; border-radius: 15px; padding: 10px 20px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+                    🛡️ Aviso Legal y Privacidad
+                </button>
+            </div>
+        </div>
+        <button id="btn-register" class="btn-primary">¡A JUGAR!</button>
+    </div>
+    <!-- PANTALLA REANUDAR SESIÓN (SOLUCIÓN AUTOPLAY MÓVIL) -->
+    <div id="resume-screen" class="screen"
+        style="align-items: center; justify-content: center; flex-direction: column; text-align: center; background: url('fondo-bosque.jpg') no-repeat center center/cover; background-color: #2e4d37;">
+        <h1 style="color: var(--primary-color); font-size: 3rem; text-shadow: 0 0 15px black;">¡Hola de nuevo!</h1>
+        <p style="font-size: 1.5rem; margin-bottom: 2rem; color: white; text-shadow: 0 0 10px black;">Toca el botón
+            para volver a jugar.</p>
+        <button id="btn-resume" class="btn-primary"
+            style="font-size: 1.5rem; padding: 15px 40px; box-shadow: var(--neon-glow);">Continuar 🚀</button>
+            
+        <button id="btn-reset-session" style="background: none; border: none; color: #ff6b6b; margin-top: 30px; font-size: 1.1rem; cursor: pointer; text-decoration: underline; font-weight: bold; text-shadow: 0 0 5px black;">¿Empezar desde cero? (Borrar progreso)</button>
+    </div>
+
+    <!-- PANTALLA TRANSICIÓN YAK -->
+    <div id="yak-transition-screen" class="screen" style="justify-content: center;">
+        <div class="yak-animation">
+            <div class="yak-avatar" style="font-size: 8rem;">🐂</div>
+            <h1 id="yak-transition-text" style="color: #00ffff; text-shadow: 0 0 15px #00ffff;">¡Hola! ¡Bienvenido!</h1>
+        </div>
+    </div>
+
+    <!-- Contenedores del Mundo Interactivo (Fase 3 y adelante) -->
+    <div id="interactive-world" class="map-container" style="display: none;">
+        <!-- HUD de Gamificación (Top Bar) -->
+        <div id="gamification-hud"
+            style="position: absolute; top: 10px; left: 10px; display: flex; flex-wrap: wrap; gap: 15px; z-index: 100; align-items: center;">
+            <div id="silver-egg-counter"
+                style="background: rgba(255,255,255,0.8); padding: 5px 15px; border-radius: 20px; font-weight: bold; border: 2px solid silver;">
+                🥚 Plata: <span>0</span>
+            </div>
+            <div id="gold-egg-counter"
+                style="background: rgba(255,215,0,0.8); padding: 5px 15px; border-radius: 20px; font-weight: bold; border: 2px solid #DAA520;">
+                🥚 Oro: <span>0</span>
+            </div>
+            <!-- Botones de Escape y Reinicio -->
+            <button id="btn-restart-session" onclick="if(window.resetSession) window.resetSession()" 
+                style="background: rgba(255, 50, 50, 0.8); color: white; border: 2px solid red; padding: 5px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(255,0,0,0.5); transition: transform 0.2s;">
+                🔄 Cambiar Idioma
+            </button>
+            <button id="btn-home" onclick="if(window.resetSession) window.resetSession()" 
+                style="background: rgba(0, 150, 255, 0.8); color: white; border: 2px solid cyan; padding: 5px 15px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,255,255,0.5); transition: transform 0.2s;">
+                🏠 Inicio
+            </button>
+        </div>
+        <!-- FASE 5: HUB DEL ÁRBOL 6D Y GAMIFICACIÓN -->
+        <div id="tree-hub"
+            style="display: flex; flex-direction: column; align-items: center; width: 100%; margin-bottom: 20px;">
+
+            <!-- HUD: Economía de Huevos -->
+            <div class="economy-hud"
+                style="display: flex; justify-content: space-between; width: 100%; padding: 0 10px; margin-bottom: 20px;">
+                <div
+                    style="background: rgba(192, 192, 192, 0.2); border: 2px solid silver; border-radius: 20px; padding: 5px 15px; color: silver; font-weight: bold; font-size: 1.2rem; box-shadow: 0 0 10px silver;">
+                    🥚 <span id="lbl-plata">Plata</span>: <span id="val-silver">0</span>
+                </div>
+                <div
+                    style="background: rgba(255, 215, 0, 0.2); border: 2px solid gold; border-radius: 20px; padding: 5px 15px; color: gold; font-weight: bold; font-size: 1.2rem; box-shadow: 0 0 10px gold;">
+                    🥚 <span id="lbl-oro">Oro</span>: <span id="val-gold">0</span>
+                </div>
+            </div>
+
+            <!-- Avatar del Árbol (Diseño 2D Pixar con respiración CSS) -->
+            <!-- Avatar del Árbol (Diseño 2D Pixar interactivo) -->
+            <div id="tree-avatar-container"
+                style="cursor: pointer; position: relative; width: 180px; height: 180px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 4px solid var(--primary-color); box-shadow: 0 0 30px var(--primary-color); transition: transform 0.3s ease; overflow: hidden; background-color: #000;">
+                
+                <!-- Video Interactivo del Árbol -->
+                <video id="tree-video-avatar" src="public/assets/videos/arbol/idle.mp4" autoplay loop muted playsinline 
+                       style="position:absolute; width:100%; height:100%; border-radius:50%; object-fit:cover; z-index: 1;">
+                </video>
+                
+                <!-- Fallback si el video falla (pantalla en negro) -->
+                <img id="tree-fallback-img" src="arbol-avatar.png" alt="Tree Avatar" 
+                     style="display: none; position:absolute; width:100%; height:100%; border-radius:50%; object-fit:cover; z-index: 2;" />
+
+                <!-- Cara Robótica (se superpone al tronco) - Manteniendo retrocompatibilidad -->
+                <div id="kuboki-face" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; width: 60px; height: 60px; z-index: 10; margin-top: 30px; position: relative;"></div>
+                
+                <!-- Aura de escucha/habla -->
+                <div id="ai-listening-indicator"
+                    style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; box-shadow: 0 0 40px var(--primary-color); animation: pulse-logo 1.5s infinite;">
+                </div>
+            </div>
+
+            <!-- Saludo y Estado -->
+            <h2 id="child-greeting"
+                style="margin: 15px 0 5px 0; color: var(--text-light); text-shadow: 0 0 10px var(--primary-color); text-align: center;">
+                ¡Bienvenido al Bosque!</h2>
+            <p id="child-status" style="margin: 0 0 15px 0; color: #aaa; text-align: center; min-height: 20px;">El árbol
+                descansa...</p>
+        </div>
+
+        <!-- MÓDULO DE HISTORIAS Y VIDEO -->
+        <div class="interactive-module" id="module-stories"
+            style="width: 100%; background: rgba(255,255,255,0.05); backdrop-filter: blur(8px); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+            <h2 id="lbl-historias" style="margin-top:0; color: var(--text-color);">Historias de Kuboki</h2>
+            <div class="story-bubbles" id="story-container"
+                style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                <!-- Burbujas generadas dinámicamente -->
+                <div class="char-item" data-vid="leofire">🦁</div>
+                <div class="char-item" data-vid="pandabamboo">🐼</div>
+                <div class="char-item" data-vid="dinowater">🦖</div>
+                <div class="char-item" data-vid="foxwind">🦊</div>
+            </div>
+        </div>
+
+        <!-- BOTÓN CENTRAL DE ZONA DE JUEGOS -->
+        <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+            <button id="btn-open-games" style="background: linear-gradient(45deg, #ff1493, #ff69b4); color: white; border: 4px solid white; padding: 15px 40px; border-radius: 30px; font-size: 1.8rem; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(255,20,147,0.6); transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 2.5rem;">🎮</span> Zona de Juegos
+            </button>
+        </div>
+
+        <!-- PANTALLA ZONA DE JUEGOS (Oculta por defecto) -->
+        <div id="games-hub-screen" style="display: none; width: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; border: 2px solid #ff1493; margin-bottom: 20px; flex-direction: column; align-items: center;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #ff69b4; text-shadow: 0 0 10px #ff1493; margin: 0;">¡Zona de Juegos!</h2>
+                <button id="btn-close-games" style="background: none; border: none; color: white; font-size: 2rem; cursor: pointer;">❌</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; width: 100%;">
+                <button class="game-native-btn" data-action="OPEN_BALLOONS" style="background: #1e90ff; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🎈</span> Globos Locos
+                </button>
+                <button class="game-native-btn" data-action="OPEN_FACE" style="background: #2ed573; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🐼</span> Arma la Cara
+                </button>
+                <button class="game-native-btn" data-action="OPEN_MOLES" style="background: #ffa502; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🔨</span> Atrapa al Topo
+                </button>
+                <button class="game-native-btn" data-action="OPEN_PIANO" style="background: #ff4757; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🎹</span> Piano Mágico
+                </button>
+                <button class="game-native-btn" data-action="OPEN_STORE" style="background: #8e44ad; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🏪</span> Tienda Mágica
+                </button>
+                <button class="game-native-btn" id="btn-radio-spotify" style="background: #1DB954; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🎵</span> Radio Mágica
+                </button>
+                <button class="game-native-btn" id="btn-cine-youtube" style="background: #FF0000; color: white; border: 3px solid white; border-radius: 15px; padding: 15px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+                    <span style="font-size: 3rem;">🎬</span> Cine Kuboki
+                </button>
+            </div>
+        </div>
+
+        <!-- MÓDULOS LAZY LOAD (PINTAR Y MASCOTA) SE CARGAN AQUÍ DINÁMICAMENTE -->
+    </div>
+
+    <!-- CONTENEDOR IFRAME DE JUEGOS EXTERNOS -->
+    <div id="game-iframe-container" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; z-index: 100000; flex-direction: column;">
+        <div style="background: #1a1a2e; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff1493;">
+            <h2 style="color: white; margin: 0; font-size: 1.2rem;">🎮 Zona de Juegos</h2>
+            <button id="btn-exit-iframe" style="background: #ff4757; color: white; border: 2px solid white; border-radius: 10px; padding: 5px 15px; font-weight: bold; cursor: pointer; font-size: 1rem;">❌ Salir del Juego</button>
+        </div>
+        <iframe id="game-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+    </div>
+
+    <!-- PANTALLA INCUBADORA DE MASCOTAS (FASE 5) -->
+    <div id="pet-incubator" class="screen" style="max-width: 800px; text-align: center; padding-top: 30px;">
+        <h1 style="color: gold; text-shadow: 0 0 20px rgba(255,215,0,0.8);">¡Incubadora Mágica!</h1>
+        <p style="color: var(--text-light); font-size: 1.2rem;">Has reunido 5 Huevos de Oro. ¡Es hora de adoptar a tu
+            mascota mágica!</p>
+
+        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 40px;">
+            <div class="pet-egg-item" data-pet="fuego" style="cursor: pointer; transition: transform 0.3s ease;">
+                <div style="font-size: 6rem; filter: drop-shadow(0 0 10px red);">🥚</div>
+                <h3 style="color: #ff6b6b;">Huevo de Fuego</h3>
+            </div>
+            <div class="pet-egg-item" data-pet="agua" style="cursor: pointer; transition: transform 0.3s ease;">
+                <div style="font-size: 6rem; filter: drop-shadow(0 0 10px cyan);">🥚</div>
+                <h3 style="color: #48dbfb;">Huevo de Agua</h3>
+            </div>
+            <div class="pet-egg-item" data-pet="tierra" style="cursor: pointer; transition: transform 0.3s ease;">
+                <div style="font-size: 6rem; filter: drop-shadow(0 0 10px lime);">🥚</div>
+                <h3 style="color: #1dd1a1;">Huevo de Tierra</h3>
+            </div>
+        </div>
+
+        <button id="btn-back-to-hub" class="btn-secondary" title="Volver al Bosque" style="margin-top: 50px; font-size: 3rem; border-radius: 50%; width: 90px; height: 90px; padding: 0; display:flex; justify-content:center; align-items:center; border:3px solid cyan; margin-left: auto; margin-right: auto;">🏠</button>
+    </div>
+
+    <!-- CONTENEDOR MAESTRO DE VIDEO A PANTALLA COMPLETA (Fase 4 Móvil) -->
+    <div id="youtube-player-container"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: black; z-index: 99999; flex-direction: column; justify-content: center; align-items: center;">
+        
+        <button id="btn-close-video" title="Cerrar Video" style="position: absolute; top: 20px; right: 20px; z-index: 100000; font-size: 2.5rem; background: rgba(255,0,0,0.8); color: white; border: 4px solid white; border-radius: 50%; width: 70px; height: 70px; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px red;">❌</button>
+        
+        <iframe id="youtube-iframe" width="100%" height="100%" src="" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+
+
+    <!-- SERVICE WORKER REGISTRATION PARA HABILITAR INSTALACIÓN PWA AUTOMÁTICA (ANDROID) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW falls:', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

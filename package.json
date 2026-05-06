@@ -1,0 +1,26 @@
+{
+  "name": "backup-primer-inicio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "ai_tutor.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/macmacbur/yak-kuboki.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/macmacbur/yak-kuboki/issues"
+  },
+  "homepage": "https://github.com/macmacbur/yak-kuboki#readme",
+  "devDependencies": {
+    "vite": "^8.0.10"
+  }
+}
